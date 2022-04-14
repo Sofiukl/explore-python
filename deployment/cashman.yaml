@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cashman
+  labels:
+    app: cashman
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cashman
+  template:
+    metadata:
+      labels:
+        app: cashman
+    spec:
+      containers:
+        - name: cashman
+          image: sofikul/cashman-python:1.0.1
+          ports:
+            - containerPort: 5000
+          imagePullPolicy: Always

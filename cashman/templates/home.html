@@ -1,0 +1,164 @@
+{% extends 'layout.html' %}
+
+{% block css %}
+    <link href="{{ url_for('static', filename='css/home.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block javascript %}
+    <script type="text/javascript">
+        var group_id = '{{ group_id }}'
+        var group_name = '{{ group_name }}'
+        var xValues = {{xValues}}
+        var incomeValues = {{ incomeValues }}
+        var expenceValues = {{ expenceValues }}
+        var netValues = {{ netValues }}
+
+        {# alert(xValues) #}
+
+        var day_view_x_values = {{day_view_x_values}}
+        var day_view_income_values = {{ day_view_income_values }}
+        var day_view_expence_values = {{ day_view_expence_values }}
+        var day_view_net_values = {{ day_view_net_values }}
+
+        {# alert(day_view_x_values) #}
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col">
+                <span class="display-4">
+                    {{group_name}} transactions
+                    <button type="button" id="txn-add-btn" class="btn btn-warning btn-circle btn-sm">Add</button>
+                </span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col col-lg-7">
+                <div class="row mt-4">
+                    <div class="col">
+                        <form id="userForm" action="/transactions" method="post">
+                            <div class="form-row">
+                                <div class="form-group col required">
+                                    <label class="control-label" for="title">Title</label>
+                                    <input type="text" name="title" id="title" class="form-control" placeholder="title" required>
+                                </div>
+
+                                <div class="form-group col required">
+                                    <label class="control-label" for="amount">Amount</label>
+                                    <input type="number" min="1.00" step="0.01" name="amount" id="amount" class="form-control"
+                                        placeholder="amount" numberonly="true" required>
+                                </div>
+                                <div class="form-group col required">
+                                    <label class="control-label" for="description">Date</label>
+                                    <input type="date" name="txn_date" id="txn_date" class="form-control" placeholder="date" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col required">
+                                    <label class="control-label" for="type">Type</label>
+                                    <select id="type" name="type" class="form-control">
+                                        <option value="INCOME">INCOME</option>
+                                        <option value="EXPENCE" selected>EXPENCE</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col">
+                                    <label for="category">Category</label>
+                                    <select id="category" name="category" class="form-control">
+                                        <option value=""></option>
+                                        <option value="Automobile">Automobile</option>
+                                        <option value="Food & Beverage">Food & Beverage</option>
+                                        <option value="Groceries">Groceries</option>
+                                        <option value="Household">Household</option>
+                                        <option value="Uitlities">Uitlities</option>
+                                        <option value="Automobile">Salary</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col">
+                                    <label for="brand">Brand</label>
+                                    <select id="brand" name="brand" class="form-control">
+                                        <option value=""></option>
+                                        <option value="Amazon">Amazon</option>
+                                        <option value="Flipcart">Flipcart</option>
+                                        <option value="Addidas">Pizza Hut</option>
+                                        <option value="Amazon">Office</option>
+                                        <option value="Amazon">Fortune</option>
+                                        <option value="Amazon">Tata</option>
+                                    </select>
+                                </div>
+
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col required">
+                                    <label class="control-label" for="description">Description</label>
+                                    <input type="text" name="description" id="description" class="form-control"
+                                        placeholder="description" required>
+                                </div>
+                                <div class="form-group col required">
+                                    <label class="control-label" for="tag">Tag</label>
+                                    <input type="text" name="tag" id="txn-tag" placeholder="tag" required/>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <input type="submit" value="add transaction" class="btn btn-success">
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col">
+                        <span class="badge rounded-pill bg-warning">Total income: {{ statictic["total_income"] }}</span>
+                        <span class="badge rounded-pill bg-info">Total expence: {{ statictic["total_expence"] }}</span>
+                        <span class="badge rounded-pill bg-success">Net: {{ statictic["net"] }}</span>
+                    </div>
+                </div>
+        
+                <div class="list-group mt-4" id="pdf">
+                    <a href="javascript:downloadFile()">Dowload transactions</a>
+                    {% if data|length == 0 %}
+                        No transactions registered. Please add your transactions.
+                    {% else %}
+                        {% for i in data %}
+                        <div class="list-group-item list-group-item-action flex-column align-items-start">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ i["title"] }} - <small>{{ i["txn_date"] }}</small></h5>
+                                <small>
+                                    {% if i["type"] == 'EXPENCE' %}
+                                    -
+                                    {% else %}
+                                    +
+                                    {% endif %}
+                                    {{ i["amount"] }}
+                                    <button type="button" onclick="deleteTxn('{{i["_id"]}}')" class="btn btn-sm"><i class="fa fa-trash"
+                                            aria-hidden="true"></i></button>
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ i["description"] }}</p>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="row mt-4"></div>
+                <div class="row mt-4"></div>
+                <div class="row mt-4">
+                    <canvas id="myChart"></canvas>
+                </div>
+                 <div class="row mt-4">
+                    <canvas id="dailyViewChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
